@@ -7,7 +7,18 @@
     "longName": "Simplistic",
     "projectType": "native",
     "resources": {
-        "media": []
+        "media": [
+            {
+                "file": "images/bluetooth-off-2.png",
+                "name": "BT_OFF",
+                "type": "png"
+            },
+            {
+                "file": "images/bluetooth-on-2.png",
+                "name": "BT_ON",
+                "type": "png"
+            }
+        ]
     },
     "sdkVersion": "2",
     "shortName": "Simplistic",
