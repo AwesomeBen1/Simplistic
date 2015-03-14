@@ -1,10 +1,17 @@
+// © Ben C.-K. 2015 or something
 #include "pebble.h"
+// Oh god what is happening in this program
+// I threw a bunch of stuff together and it's so messy
+// I don't even know how to program in C...
 
 static Window *s_main_window;
 static TextLayer *s_day_layer, *s_date_layer, *s_time_layer;
 static Layer *s_line_layer/*, *s_bat_rect_layer*/;
 static BitmapLayer *s_bt_layer, *s_bat_layer, *s_bat_charging_layer;
 static GBitmap *s_bt_on_bitmap, *s_bt_off_bitmap, *s_bat_bord_bitmap, *s_bat_charging_bitmap, *s_bat_charged_bitmap;
+
+// Why isn't this working?
+// static uint8_t chargenum = 100;
 
 static void line_layer_update_callback(Layer *layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, GColorWhite);
@@ -13,8 +20,9 @@ static void line_layer_update_callback(Layer *layer, GContext* ctx) {
 
 /*static void bat_rect_fill(Layer *layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, GColorWhite);
-  graphics_fill_rect(ctx, GRect(144-16, 6, 10, 5), 0, GCornerNone);
+  graphics_fill_rect(ctx, GRect(144-16, 6, chargenum/10, 5), 0, GCornerNone);
 }*/
+// Why isn't it recognizing chargenum?
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   // Need to be static because they're used by the system later.
@@ -51,6 +59,7 @@ static void bt_handler(bool connected) {
   } else {
     bitmap_layer_set_bitmap(s_bt_layer, s_bt_off_bitmap);
   }
+	// For some reason these don't work with vibes after light...
 	vibes_long_pulse();
 	light_enable_interaction();
 }
@@ -67,8 +76,9 @@ static void battery_handler(BatteryChargeState new_state) {
 		layer_set_hidden(bitmap_layer_get_layer(s_bat_charging_layer), true);
 		bitmap_layer_set_bitmap(s_bat_layer, s_bat_bord_bitmap);
 	}
+	// Can't figure out why this isn't working...
 	/*if (!new_state.is_plugged) {
-		uint8_t chargenum = new_state.charge_percent;
+		chargenum = new_state.charge_percent;
 		layer_mark_dirty(s_bat_rect_layer);
 	}*/
 }
@@ -130,6 +140,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bat_charging_layer));
 	layer_set_hidden(bitmap_layer_get_layer(s_bat_charging_layer), true);
 	
+	// Maybe it works better here?
 	/*static uint8_t chargenum = 100;
 	s_bat_rect_layer = layer_create(GRect(144-16, 6, 10, 5));
   layer_set_update_proc(s_bat_rect_layer, bat_rect_fill);*/
@@ -167,8 +178,8 @@ static void init() {
 	battery_state_service_subscribe(battery_handler);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   
-	battery_handler(battery_state_service_peek());
   // Prevent starting blank
+	battery_handler(battery_state_service_peek());
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
   handle_minute_tick(t, MINUTE_UNIT);
