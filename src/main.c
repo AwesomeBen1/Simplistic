@@ -2,14 +2,19 @@
 
 static Window *s_main_window;
 static TextLayer *s_day_layer, *s_date_layer, *s_time_layer;
-static Layer *s_line_layer;
-static BitmapLayer *s_bt_layer;
-static GBitmap *s_bt_on_bitmap, *s_bt_off_bitmap;
+static Layer *s_line_layer/*, *s_bat_rect_layer*/;
+static BitmapLayer *s_bt_layer, *s_bat_layer, *s_bat_charging_layer;
+static GBitmap *s_bt_on_bitmap, *s_bt_off_bitmap, *s_bat_bord_bitmap, *s_bat_charging_bitmap, *s_bat_charged_bitmap;
 
 static void line_layer_update_callback(Layer *layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, GColorWhite);
   graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
 }
+
+/*static void bat_rect_fill(Layer *layer, GContext* ctx) {
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_fill_rect(ctx, GRect(144-16, 6, 10, 5), 0, GCornerNone);
+}*/
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   // Need to be static because they're used by the system later.
@@ -46,8 +51,26 @@ static void bt_handler(bool connected) {
   } else {
     bitmap_layer_set_bitmap(s_bt_layer, s_bt_off_bitmap);
   }
-	vibes_short_pulse();
+	vibes_long_pulse();
 	light_enable_interaction();
+}
+
+static void battery_handler(BatteryChargeState new_state) {
+	// Display battery charge icon
+	if (new_state.is_charging) {
+		layer_set_hidden(bitmap_layer_get_layer(s_bat_charging_layer), false);
+		bitmap_layer_set_bitmap(s_bat_layer, s_bat_bord_bitmap);
+	} else if (new_state.is_plugged) {
+		layer_set_hidden(bitmap_layer_get_layer(s_bat_charging_layer), true);
+		bitmap_layer_set_bitmap(s_bat_layer, s_bat_charged_bitmap);
+	} else {
+		layer_set_hidden(bitmap_layer_get_layer(s_bat_charging_layer), true);
+		bitmap_layer_set_bitmap(s_bat_layer, s_bat_bord_bitmap);
+	}
+	/*if (!new_state.is_plugged) {
+		uint8_t chargenum = new_state.charge_percent;
+		layer_mark_dirty(s_bat_rect_layer);
+	}*/
 }
 
 static void main_window_load(Window *window) {
@@ -90,6 +113,26 @@ static void main_window_load(Window *window) {
   }
   bitmap_layer_set_alignment(s_bt_layer, GAlignCenter);
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_layer));
+	
+	// Battery indicator
+	s_bat_bord_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BATTERY_BORDER);
+	s_bat_charging_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BATTERY_CHARGING);
+	s_bat_charged_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BATTERY_CHARGED);
+	
+	s_bat_layer = bitmap_layer_create(GRect(144-18, 4, 15, 8));
+	bitmap_layer_set_bitmap(s_bat_layer, s_bat_bord_bitmap);
+  bitmap_layer_set_alignment(s_bat_layer, GAlignCenter);
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_bat_layer));
+	
+	s_bat_charging_layer = bitmap_layer_create(GRect(144-25, 4, 5, 8));
+	bitmap_layer_set_bitmap(s_bat_charging_layer, s_bat_charging_bitmap);
+  bitmap_layer_set_alignment(s_bat_charging_layer, GAlignCenter);
+  layer_add_child(window_layer, bitmap_layer_get_layer(s_bat_charging_layer));
+	layer_set_hidden(bitmap_layer_get_layer(s_bat_charging_layer), true);
+	
+	/*static uint8_t chargenum = 100;
+	s_bat_rect_layer = layer_create(GRect(144-16, 6, 10, 5));
+  layer_set_update_proc(s_bat_rect_layer, bat_rect_fill);*/
 }
 
 static void main_window_unload(Window *window) {
@@ -97,9 +140,18 @@ static void main_window_unload(Window *window) {
 	text_layer_destroy(s_date_layer);
   text_layer_destroy(s_time_layer);
 	layer_destroy(s_line_layer);
+	
 	bitmap_layer_destroy(s_bt_layer);
   gbitmap_destroy(s_bt_on_bitmap);
 	gbitmap_destroy(s_bt_off_bitmap);
+	
+	//layer_destroy(s_bat_rect_layer);
+	bitmap_layer_destroy(s_bat_layer);
+	bitmap_layer_destroy(s_bat_charging_layer);
+	
+	gbitmap_destroy(s_bat_bord_bitmap);
+	gbitmap_destroy(s_bat_charging_bitmap);
+	gbitmap_destroy(s_bat_charged_bitmap);
 }
 
 static void init() {
@@ -112,8 +164,10 @@ static void init() {
   window_stack_push(s_main_window, true);
 
 	bluetooth_connection_service_subscribe(bt_handler);
+	battery_state_service_subscribe(battery_handler);
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
   
+	battery_handler(battery_state_service_peek());
   // Prevent starting blank
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
@@ -122,7 +176,8 @@ static void init() {
 
 static void deinit() {
   window_destroy(s_main_window);
-
+	bluetooth_connection_service_unsubscribe();
+	battery_state_service_unsubscribe();
   tick_timer_service_unsubscribe();
 }
 
