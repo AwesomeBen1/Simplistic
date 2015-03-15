@@ -9,6 +9,12 @@
     "resources": {
         "media": [
             {
+                "file": "images/menu-icon.png",
+                "menuIcon": true,
+                "name": "MENU_ICON",
+                "type": "png"
+            },
+            {
                 "file": "images/charging-indicator.png",
                 "name": "BATTERY_CHARGING",
                 "type": "png"
