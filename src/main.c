@@ -1,4 +1,5 @@
-// Made by Ben Chapman-Kish up to and on 2015-03-14
+// Simplistic
+// Made by Ben Chapman-Kish from 2015-03-13 to 2015-03-14
 #include "pebble.h"
 // Don't judge me for this program, especially if it's the future
 // I'll probably be a much better C programmer in the future, I promise
@@ -29,9 +30,9 @@ static void bat_rect_fill(Layer *layer, GContext* ctx) {
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
   // Need to be static because they're used by the system later.
-  static char s_time_text[] = "00:00";
+  static char s_time_text[] = "12:00";
   static char s_date_text[] = "Xxxxxxxxx 00";
-	static char s_day_text[] = "Xxxxxxxxx";
+	static char s_day_text[] = "Xxxxxxxxx,";
 
 	// Date is currently updated every minute, should be changed later.
 	strftime(s_day_text, sizeof(s_day_text), "%A,", tick_time);
